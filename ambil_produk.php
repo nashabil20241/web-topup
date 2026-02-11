@@ -1,48 +1,43 @@
 <?php
 include 'koneksi.php';
 
-// Pastikan data bersih dari spasi
-$m_id = trim($merchant_id);
-$s_key = trim($secret_key);
+$formData = [
+    'api_id' => $api_id,
+    'api_key' => $api_key,
+    'type' => 'services', // Di VIP namanya services
+];
 
-// COBA RUMUS SESUAI DOKUMENTASI TERBARU (Mungkin perlu huruf kecil semua)
-// Rumus: md5(MerchantID + SecretKey + "pr")
-$signature = md5($m_id . $s_key . "pr");
-
-// Endpoint URL
-$url = "https://v1.apigames.id/merchant/produk?merchant=$m_id&signature=$signature";
-
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, $url);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-curl_setopt($ch, CURLOPT_TIMEOUT, 30); // Tambah timeout agar tidak gantung
+$ch = curl_init("https://vip-reseller.co.id/api/game-feature");
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($formData));
 $result = curl_exec($ch);
 curl_close($ch);
 
-$data_produk = json_decode($result, true);
+$data = json_decode($result, true);
+$produk_ml = [];
+$seen_names = []; // Untuk mencegah duplikat (no dupe)
 
-// CEK APAKAH ADA MASALAH PADA PENGIRIMAN DATA
-if (isset($data_produk['status']) && $data_produk['status'] == 0) {
-    echo "<div style='color:red; background:#fff3f3; padding:10px; border:1px solid red; border-radius:8px; margin-bottom:15px;'>";
-    echo "<b>⚠️ Pesan Pusat:</b> " . $data_produk['error_msg'] . "<br>";
-    echo "<small>Saran: Pastikan di Dashboard APIGames > Integrasi, IP Whitelist benar-benar KOSONG (tidak ada spasi/angka satu pun).</small>";
-    echo "</div>";
-}
+if (isset($data['data']) && is_array($data['data'])) {
+    foreach ($data['data'] as $item) {
+        $name = strtolower($item['name']);
+        
+        // 1. Filter: Hanya Mobile Legends, Tanpa Joki, Tanpa Twilight, Tanpa Pass
+        if (strpos($name, 'mobile legends') !== false && 
+            strpos($name, 'joki') === false && 
+            strpos($name, 'twilight') === false && 
+            strpos($name, 'pass') === false) {
+            
+            // 2. Bersihkan nama dari tulisan "Bonus", "+", dll agar rapi
+            $clean_name = preg_replace('/(\+.*bonus.*|bonus.*|\(.*\))/i', '', $item['name']);
+            $clean_name = trim($clean_name);
 
-// Fungsi filter produk
-function getMLProducts($data) {
-    $results = [];
-    if(isset($data['data']) && is_array($data['data'])) {
-        foreach($data['data'] as $p) {
-            // Kita cari kategori Mobile Legends
-            if(strpos(strtolower($p['kategori']), 'mobile legend') !== false) {
-                $results[] = $p;
+            // 3. No Dupe: Jika nama bersih belum pernah ada, masukkan ke daftar
+            if (!in_array($clean_name, $seen_names)) {
+                $item['name_clean'] = $clean_name;
+                $produk_ml[] = $item;
+                $seen_names[] = $clean_name;
             }
         }
     }
-    return $results;
 }
-
-$produk_ml = getMLProducts($data_produk);
 ?>
