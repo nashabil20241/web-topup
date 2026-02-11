@@ -1,14 +1,14 @@
 <?php
 include 'koneksi.php';
 
-// Menghapus spasi tak sengaja
 $m_id = trim($merchant_id);
 $s_key = trim($secret_key);
 
-// SESUAI DOKUMENTASI: Signature untuk produk adalah md5(merchant + secret + "pr")
+// SESUAI POSTMAN: Signature Ambil Produk adalah MD5(merchant + secret + "pr")
+// PASTI KAN tidak ada tanda titik dua (:) di dalam MD5 ini
 $signature = md5($m_id . $s_key . "pr");
 
-// Endpoint sesuai dokumentasi Postman
+// URL endpoint juga harus bersih
 $url = "https://v1.apigames.id/merchant/produk?merchant=$m_id&signature=$signature";
 
 $ch = curl_init();
@@ -20,23 +20,25 @@ curl_close($ch);
 
 $data_produk = json_decode($result, true);
 
-// Fungsi filter produk Mobile Legends
+// Jika masih error, kita tampilkan detail untuk debugging
+if (isset($data_produk['status']) && $data_produk['status'] == 0) {
+    echo "<div style='color:red; padding:10px; border:1px solid red;'>";
+    echo "<b>Error dari APIGames:</b> " . $data_produk['error_msg'] . "<br>";
+    echo "<b>Merchant ID:</b> " . $m_id . "<br>";
+    echo "</div>";
+}
+
 function getMLProducts($data) {
     $results = [];
     if(isset($data['data']) && is_array($data['data'])) {
         foreach($data['data'] as $p) {
-            // Filter kategori yang mengandung 'Mobile Legend'
+            // Kita ambil kategori yang ada nama Mobile Legends
             if(strpos(strtolower($p['kategori']), 'mobile legend') !== false) {
                 $results[] = $p;
             }
         }
     }
     return $results;
-}
-
-// Jika masih error, tampilkan pesan agar kita tahu
-if (isset($data_produk['status']) && $data_produk['status'] == 0) {
-    echo "<div class='alert alert-danger'><b>Error API:</b> " . $data_produk['error_msg'] . "</div>";
 }
 
 $produk_ml = getMLProducts($data_produk);
