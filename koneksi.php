@@ -1,5 +1,4 @@
 <?php
-// File: koneksi.php
 $merchant_id = "M260210CSXG7601QA"; 
-$secret_key  = "fe82a9adfea474e2ba25bd42f676cc5f478d84b2dd4bf9401e84dba24e4c6ef9"; 
+$secret_key  = "820fffda80a16d4ef1ac9ff219bee76f4fb04e31fefa2f65b943d1d3bae8801c"; 
 ?>
