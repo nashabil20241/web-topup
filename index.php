@@ -19,15 +19,19 @@
     <div class="row g-3">
         <?php
         $game_list = [];
+        $ada_data = false;
+
+        // Cek apakah data benar-benar turun dari VIP
         if (isset($data_vip['data']) && is_array($data_vip['data'])) {
             foreach ($data_vip['data'] as $item) {
-                // Ambil brand/kategori game (misal: "Mobile Legends", "Free Fire")
-                $brand = isset($item['brand']) ? trim($item['brand']) : '';
+                // Kita coba semua kemungkinan nama kategori dari VIP Reseller
+                $brand = $item['brand'] ?? $item['category'] ?? $item['kategori'] ?? $item['game'] ?? '';
+                $brand = trim($brand);
                 
-                // Pastikan nama game tidak kosong dan belum dimasukkan ke array
+                // Pisahkan nama yang valid dan cegah duplikat
                 if ($brand != '' && !in_array($brand, $game_list)) {
                     $game_list[] = $brand;
-                    // Bikin URL yang rapi, contoh: order.php?game=Mobile Legends
+                    $ada_data = true;
                     $url_order = "order.php?game=" . urlencode($brand);
                     ?>
                     <div class="col-6 col-md-3 col-lg-2">
@@ -41,8 +45,19 @@
                     <?php
                 }
             }
-        } else {
-            echo "<p class='text-muted'>Belum ada game yang dimuat. Pastikan API terhubung.</p>";
+        } 
+        
+        // JIKA MASIH KOSONG: Tampilkan 1 data mentah agar kita tahu format aslinya
+        if (!$ada_data) {
+            echo "<p class='text-muted'>Mencari format kategori...</p>";
+            echo "<pre style='background:#eee; padding:15px; border-radius:8px; font-size:13px; overflow-x:auto;'>";
+            if(isset($data_vip['data'][0])) {
+                echo "<b>Berhasil narik data! Tapi kuncinya apa ya? Cek di bawah ini:</b>\n\n";
+                print_r($data_vip['data'][0]);
+            } else {
+                echo "Data dari pusat VIP Reseller benar-benar kosong.";
+            }
+            echo "</pre>";
         }
         ?>
     </div>
