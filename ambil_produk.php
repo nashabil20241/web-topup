@@ -1,0 +1,30 @@
+<?php
+include 'koneksi.php';
+
+// Rumus Signature Produk (Sesuai yang kita bahas tadi)
+$signature = md5($merchant_id . ":" . $secret_key . ":produk");
+$url = "https://v1.apigames.id/merchant/produk?merchant=$merchant_id&signature=$signature";
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, $url);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+$result = curl_exec($ch);
+curl_close($ch);
+
+$data_produk = json_decode($result, true);
+
+// Fungsi untuk ambil produk khusus Mobile Legends saja
+function getMLProducts($data) {
+    $results = [];
+    if(isset($data['data'])) {
+        foreach($data['data'] as $p) {
+            if(strpos(strtolower($p['kategori']), 'mobile legend') !== false) {
+                $results[] = $p;
+            }
+        }
+    }
+    return $results;
+}
+
+$produk_ml = getMLProducts($data_produk);
+?>
